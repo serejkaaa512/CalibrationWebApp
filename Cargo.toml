@@ -1,0 +1,7 @@
+[package]
+name = "calibration_web_app"
+version = "0.1.0"
+authors = ["serejkaaa512"]
+
+[dependencies]
+nickel = "*"

@@ -5,3 +5,5 @@ authors = ["serejkaaa512"]
 
 [dependencies]
 nickel = "*"
+url = "*"
+groupable = "*"

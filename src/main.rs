@@ -1,23 +1,78 @@
 #[macro_use] 
 extern crate nickel;
 extern crate calibration_web_app;
+extern crate url;
+extern crate groupable;
+
+use calibration_web_app::generator::Generator;
+use calibration_web_app::powermeter::PowerMeter;
 use std::collections::HashMap;
+use nickel::{Nickel, HttpRouter, Request, Response,
+    MiddlewareResult};
+    use nickel::extensions::Redirect;
+    use std::io::Read;
+    use url::form_urlencoded;
+    use groupable::Groupable;
 
-use nickel::{Nickel, HttpRouter};
+    struct Devices {
+        gen: Generator,
+        pm: PowerMeter
+    }
 
-fn main() {
-    let mut server = Nickel::new();
-
-    server.get("/", middleware!{ |_,response|
-        let mut data = HashMap::<&str, &str>::new();
-        return response.render("src/templates/mainpage.tpl", &data);
-    });
-
-    server.listen("127.0.0.1:6767");
-}
+    impl Devices {
+        pub fn new(gen_ip: String, gen_port: u16, pm_ip: String, pm_port: u16) -> Devices {
+            Devices { 
+                gen: Generator::new(&*gen_ip, gen_port),
+                pm: PowerMeter::new(&*pm_ip, pm_port), 
+            }
+        }
+    }
 
 
-#[test]
-fn server_test() {
-    assert!(true);
-}
+    fn logger<'a, D>(request: &mut Request<D>, response: Response<'a, D>) -> MiddlewareResult<'a, D> {
+        println!("logging request: {:?}", request.origin.uri);
+        response.next_middleware()
+    }
+
+    fn main() {
+        let mut server = Nickel::new();
+
+        server.utilize(logger);
+
+        server.utilize(router!(
+            get "/" => |_,response| {
+                let mut _data = HashMap::<&str, &str>::new();
+                return response.render("src/templates/mainpage.tpl", &_data);
+            }
+
+            post "/" => |req, resp| {
+                let mut form_data = String::new();
+                req.origin.read_to_string(&mut form_data).unwrap();
+                let map = &get_hashmap_from_query(&*form_data);
+                Devices::new(
+                    get_param_from_hashmap(map, "generator_ip"),
+                    get_param_from_hashmap(map, "generator_port").parse::<u16>().unwrap(),
+                    get_param_from_hashmap(map, "powermeter_ip"),
+                    get_param_from_hashmap(map, "powermeter_port").parse::<u16>().unwrap());
+                return resp.redirect("/calibration/")
+            }
+
+        ));
+
+        server.listen("127.0.0.1:6767");
+
+    }
+
+
+    fn get_hashmap_from_query(encoded_string : &str) -> HashMap<String, Vec<String>>{
+        form_urlencoded::parse(encoded_string.as_bytes())
+        .into_iter()
+        .group()
+    }
+
+    fn get_param_from_hashmap(map: &HashMap<String, Vec<String>>, param_name: &str) -> String{
+        map.get(param_name)
+        .and_then(|v| v.first().map(|s| &**s))
+        .unwrap()
+        .to_string()
+    }

@@ -7,7 +7,7 @@ extern crate groupable;
 use calibration_web_app::generator::Generator;
 use calibration_web_app::powermeter::PowerMeter;
 use std::collections::HashMap;
-use nickel::{Nickel, HttpRouter, Request, Response,
+use nickel::{Nickel, HttpRouter, Request, Response, StaticFilesHandler,
     MiddlewareResult};
     use nickel::extensions::Redirect;
     use std::io::Read;
@@ -39,6 +39,8 @@ use nickel::{Nickel, HttpRouter, Request, Response,
 
         server.utilize(logger);
 
+        server.utilize(StaticFilesHandler::new("assets/"));
+
         server.utilize(router!(
             get "/" => |_,response| {
                 let mut _data = HashMap::<&str, &str>::new();
@@ -59,7 +61,7 @@ use nickel::{Nickel, HttpRouter, Request, Response,
 
         ));
 
-        server.listen("127.0.0.1:6767");
+        server.listen("0.0.0.0:6767");
 
     }
 

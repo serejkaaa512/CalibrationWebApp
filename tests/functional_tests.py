@@ -25,18 +25,19 @@ class CalibrationTest(unittest.TestCase):
         # видим поля для ввода IP и порта Генератора и Измерителя мощности.
         # в полях для ввода присутствуют значения по умолчанию
         inputbox = self.browser.find_element_by_id('id_generator_ip')
-        self.assertEqual(inputbox.get_attribute('placeholder'), '10.10.0.7')
+        self.assertEqual(inputbox.get_attribute('value'), '10.10.0.7')
 
         inputbox = self.browser.find_element_by_id('id_generator_port')
-        self.assertEqual(inputbox.get_attribute('placeholder'), '3333')
+        self.assertEqual(inputbox.get_attribute('value'), '3333')
 
         inputbox = self.browser.find_element_by_id('id_powermeter_ip')
-        self.assertEqual(inputbox.get_attribute('placeholder'), '10.10.0.7')
+        self.assertEqual(inputbox.get_attribute('value'), '10.10.0.7')
 
         inputbox = self.browser.find_element_by_id('id_powermeter_port')
-        self.assertEqual(inputbox.get_attribute('placeholder'), '5025')
+        self.assertEqual(inputbox.get_attribute('value'), '5025')
 
         # заполняем поля значениями и нажимаем enter
+        inputbox.clear()
         inputbox.send_keys('4444')
         inputbox.send_keys(Keys.ENTER)
         # происходит переход в случае успешного подключения на страницу

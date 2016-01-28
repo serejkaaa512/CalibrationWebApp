@@ -1,5 +1,15 @@
-pub mod generator;
-pub mod powermeter;
+extern crate mysql;
+extern crate nickel;
+extern crate typemap;
+extern crate plugin;
+
+mod generator;
+mod powermeter;
+mod middleware;
+
+pub use self::generator::Generator;
+pub use self::powermeter::PowerMeter;
+pub use self::middleware::{MysqlMiddleware, MysqlRequestExtensions};
 
 use std::net::TcpStream;
 use std::io::{ Write, BufReader, BufRead};

@@ -1,7 +1,6 @@
 use super::Unit;
 use std::error::Error;
 
-
 #[derive(Debug)]
 pub struct Generator {
     unit: Unit

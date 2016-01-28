@@ -7,3 +7,10 @@ authors = ["serejkaaa512"]
 nickel = "*"
 url = "*"
 groupable = "*"
+typemap="*"
+plugin="*"
+
+[dependencies.mysql]
+mysql = "*"
+default-features = false
+features = ["pipe"]

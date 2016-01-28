@@ -17,7 +17,8 @@ use mysql::value::from_row;
 struct Props {
     ip: String,
     port: u16,
-    busy: bool
+    busy: bool,
+    id: i32
 }
 
 fn logger<'a, D>(request: &mut Request<D>, response: Response<'a, D>) -> MiddlewareResult<'a, D> {
@@ -38,23 +39,31 @@ fn main() {
         get "/" => |request, response| {
             let pool = request.db_connection();
             let generators: Vec<Props> = 
-            pool.prep_exec("SELECT IP, Port, IsBusy FROM generators", ())
+            pool.prep_exec("SELECT IP, Port, IsBusy, Id FROM generators", ())
             .map(|result| { result.map(|x| x.unwrap()).map(|row| {
-                    let (ip, port, busy) = from_row(row);
-                    Props {
-                        ip: ip,
-                        port: port,
-                        busy: busy,
-                    }
-                }).collect() 
-            }).unwrap(); 
+                let (ip, port, busy, id) = from_row(row);
+                Props {
+                    ip: ip,
+                    port: port,
+                    busy: busy,
+                    id:id
+                }})
+            .collect()})
+            .unwrap(); 
 
-            for gen in generators.iter() {
-                println!("ip: {}, port: {}, busy: {}", gen.ip, gen.port, gen.busy);
-            }
+            let gen_data: Vec<_> =  generators.into_iter()
+            .map(|gen| {
+                let mut g = HashMap::new();
+                g.insert("name", format!("{}:{}, busy={}", gen.ip, gen.port, gen.busy));
+                g.insert("value", format!("{}",gen.id));
+                g})
+            .collect();
 
-            let mut _data = HashMap::<&str, &str>::new();
-            return response.render("src/templates/mainpage.tpl", &_data);
+            
+
+            let mut data = HashMap::new();
+            data.insert("generators", gen_data);
+            return response.render("src/templates/mainpage.tpl", &data);
         }
 
         post "/" => |req, resp| {

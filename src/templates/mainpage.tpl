@@ -37,6 +37,12 @@
             </td>
         </tr>
     </table>
+    {{#generators}}
+        <input type="radio" value="{{value}}" name="gen_value">
+       <label>{{name}}</label>
+       <br/>
+    {{/generators}}
+
     <input type="submit" value="Соединиться">
     <!-- <input type="submit" value="Ok" style="display:none"> -->
 </form>

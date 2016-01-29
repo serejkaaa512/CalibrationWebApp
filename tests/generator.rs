@@ -1,43 +1,43 @@
 extern crate calibration_web_app;
-use calibration_web_app::generator;
+use calibration_web_app::Generator;
 
-fn can_create_gen(address: &str, port: u16) -> generator::Generator{
-    let pw = generator::Generator::new(address, port);
+fn can_create_gen(address: &str, port: u16) -> Generator{
+    let pw = Generator::new(address, port);
     assert!(true);
     pw
 }
 
-fn can_get_current_freq(gen: &mut generator::Generator) {
+fn can_get_current_freq(gen: &mut Generator) {
     let _freq = gen.get_freq().unwrap();
     assert!(true);
 }
 
-fn can_get_current_power(gen: &mut generator::Generator) {
+fn can_get_current_power(gen: &mut Generator) {
     let _power = gen.get_power().unwrap();
     assert!(true);
 }
 
-fn can_set_current_freq(gen: &mut generator::Generator, freq: f32) {
+fn can_set_current_freq(gen: &mut Generator, freq: f32) {
     let _freq = gen.set_freq(freq).unwrap();
     assert!(true);
 }
 
-fn can_set_current_power(gen: &mut generator::Generator, power: f32) {
+fn can_set_current_power(gen: &mut Generator, power: f32) {
     let _power = gen.set_power(power).unwrap();
     assert!(true);
 }
 
-fn can_set_current_power_on(gen: &mut generator::Generator) {
+fn can_set_current_power_on(gen: &mut Generator) {
     let _power = gen.set_power_on().is_none();
     assert!(_power);
 }
 
-fn can_set_current_power_off(gen: &mut generator::Generator) {
+fn can_set_current_power_off(gen: &mut Generator) {
     let _power = gen.set_power_off().is_none();
     assert!(_power);
 }
 
-fn can_get_current_power_on(gen: &mut generator::Generator) {
+fn can_get_current_power_on(gen: &mut Generator) {
     let _power = gen.get_power_on().unwrap();
     assert!(true);
 }

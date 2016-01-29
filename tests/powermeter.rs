@@ -1,18 +1,18 @@
 extern crate calibration_web_app;
-use calibration_web_app::powermeter;
+use calibration_web_app::PowerMeter;
 
-fn can_create_pm(address: &str, port: u16) -> powermeter::PowerMeter{
-    let pw = powermeter::PowerMeter::new(address, port);
+fn can_create_pm(address: &str, port: u16) -> PowerMeter{
+    let pw = PowerMeter::new(address, port);
     assert!(true);
     pw
 }
 
-fn can_get_current_power_pm(pm: &mut powermeter::PowerMeter) {
+fn can_get_current_power_pm(pm: &mut PowerMeter) {
     let _power = pm.get_power(1).unwrap();
     assert!(true);
 }
 
-fn can_get_current_power_pm_err(pm: &mut powermeter::PowerMeter) {
+fn can_get_current_power_pm_err(pm: &mut PowerMeter) {
     let _power = pm.get_power(2).unwrap();
     assert!(true);
 }

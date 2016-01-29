@@ -19,7 +19,8 @@ impl MysqlMiddleware {
                 db_name: Some(db_name.into()),
                 ..Default::default()
         };
-        let pool = MyPool::new(options).unwrap();
+        let pool = MyPool::new(options).map_err(|_| "Connection to MySQL failed!").unwrap();
+        
         MysqlMiddleware {
             pool: Arc::new(pool),
         }

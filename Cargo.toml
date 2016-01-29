@@ -9,6 +9,7 @@ url = "*"
 groupable = "*"
 typemap="*"
 plugin="*"
+rustc-serialize = "*"
 
 [dependencies.mysql]
 mysql = "*"

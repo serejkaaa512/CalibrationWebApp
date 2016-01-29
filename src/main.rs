@@ -71,7 +71,6 @@ fn main() {
                 return resp.redirect("/")
             }
             
-
             if map.contains_key("add_powermeter") {
                 let pool = req.db_connection();
                 add_device_to_db(map, pool, "powermeter");
@@ -84,6 +83,7 @@ fn main() {
                 return resp.redirect("/")
             }
 
+            println!("{:?}", map);
 
             return resp.redirect("/calibration/")
         }

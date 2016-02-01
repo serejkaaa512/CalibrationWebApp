@@ -46,12 +46,8 @@ fn main() {
     server.utilize(MysqlMiddleware::new("calibr", "root", "1234"));
 
     server.utilize(router!(
-        get "/" => |request, response| {
-            let pool = request.db_connection();
-            let generators = get_devices_from_db(&pool, "generators");
-            let powermeters = get_devices_from_db(&pool, "powermeters");
-            let data = Devices{ generators: generators, powermeters: powermeters };
-            return response.render("src/templates/mainpage.tpl", &data);
+        get "/" => |req, resp| {
+            return get_all_devices(req, resp)
         }
 
         post "/" => |req, resp| {
@@ -59,35 +55,28 @@ fn main() {
             req.origin.read_to_string(&mut form_data).unwrap();
             let map = &get_hashmap_from_query(&*form_data);
 
-            if map.contains_key("add_generator") {
-                let pool = req.db_connection();
-                add_device_to_db(map, pool, "generator");
-                return resp.redirect("/")
-            }
-
-            if let Some(k) = map.keys().find(|ref key| key.contains("rem_generator")){
-                let pool = req.db_connection();
-                rem_device_from_db(pool, "generator", k);
-                return resp.redirect("/")
-            }
-            
-            if map.contains_key("add_powermeter") {
-                let pool = req.db_connection();
-                add_device_to_db(map, pool, "powermeter");
-                return resp.redirect("/")
-            }
-
-            if let Some(k) = map.keys().find(|ref key| key.contains("rem_powermeter")){
-                let pool = req.db_connection();
-                rem_device_from_db(pool, "powermeter", k);
-                return resp.redirect("/")
-            }
-
             println!("{:?}", map);
 
             return resp.redirect("/calibration/")
         }
-        ));server.listen("0.0.0.0:6767");
+
+        post "/generator/add" => |req, resp| {
+            return add_device_to_db(req, resp, "generator")
+        }
+
+        post "/powermeter/add" => |req, resp| {
+            return add_device_to_db(req, resp, "powermeter")
+        }
+
+        post "/generator/rem" => |req, resp| {
+            return rem_device_from_db(req, resp, "generator")
+        }
+
+        post "/powermeter/rem" => |req, resp| {
+            return rem_device_from_db(req, resp, "powermeter")
+        }
+        ));
+    server.listen("0.0.0.0:6767");
 }
 
 
@@ -104,20 +93,13 @@ fn get_param_from_hashmap(map: &HashMap<String, Vec<String>>, param_name: &str) 
     .to_string()
 }
 
-fn add_device_to_db(map: &HashMap<String, Vec<String>>, pool: Arc<MyPool>, dev_name: &str) {
-    let mut stmt = 
-    pool.prepare(format!(r"INSERT INTO {}s(IP, Port, IsBusy) VALUES (?, ?, ?)", dev_name)).unwrap();
-    stmt.execute((
-        &*get_param_from_hashmap(map, &*format!("{}_ip",dev_name)), 
-        get_param_from_hashmap(map, &*format!("{}_port",dev_name)).parse::<u16>().unwrap(), 
-        false)).unwrap();
-}
 
-fn rem_device_from_db(pool: Arc<MyPool>, dev_name: &str, k: &str) {
-    let mut id = (*k).to_string();
-    let offset = id.find('-').unwrap() + 1;
-    id.drain(..offset).collect::<String>();
-    let _ = pool.prep_exec(format!("DELETE FROM {}s WHERE id=?", dev_name),(id,));
+fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
+    let pool = req.db_connection();
+    let generators = get_devices_from_db(&pool, "generators");
+    let powermeters = get_devices_from_db(&pool, "powermeters");
+    let data = Devices{ generators: generators, powermeters: powermeters };
+    return resp.render("src/templates/mainpage.tpl", &data);
 }
 
 fn get_devices_from_db(pool: &Arc<MyPool>, dev_name: &str) -> Vec<Props> {
@@ -125,4 +107,39 @@ fn get_devices_from_db(pool: &Arc<MyPool>, dev_name: &str) -> Vec<Props> {
     .map(|result| { result.map(|x| x.unwrap()).map(|row| {
         let (ip, port, busy, id) = from_row(row);
         Props {ip: ip, port: port, busy: busy, id: id}}).collect()}).unwrap()
+}
+
+
+fn rem_device_from_db<'a>(req: &mut Request, resp: Response<'a>, dev_name: &str) -> MiddlewareResult<'a> {
+    let mut form_data = String::new();
+    req.origin.read_to_string(&mut form_data).unwrap();
+    let map = &get_hashmap_from_query(&*form_data);
+    let id = &*get_param_from_hashmap(map, "id");
+    let pool = req.db_connection();
+    let _ = pool.prep_exec(format!("DELETE FROM {}s WHERE id=?", dev_name),(id,));
+    resp.send("removed")
+}
+
+fn add_device_to_db<'a>(req: &mut Request, resp: Response<'a>, dev_name: &str) -> MiddlewareResult<'a> {
+    let mut form_data = String::new();
+    req.origin.read_to_string(&mut form_data).unwrap();
+    let map = &get_hashmap_from_query(&*form_data);
+    let ip = &*get_param_from_hashmap(map, "ip");
+    let port = get_param_from_hashmap(map, "port").parse::<u16>().unwrap();
+    let pool = req.db_connection();
+    let insert_str = 
+    format!(r"INSERT INTO {}s(IP, Port, IsBusy) VALUES (?, ?, ?)", dev_name);
+    let mut stmt = pool.prepare(insert_str).unwrap();
+    let _ = stmt.execute((ip,port,false));
+
+    let select_str = 
+    format!("SELECT IP, Port, IsBusy, Id FROM {}s WHERE IP=? AND Port=? AND IsBusy=false",
+        dev_name);
+    let res: Vec<Props> = pool.prep_exec(select_str, (ip, port))
+    .map(|result| { result.map(|x| x.unwrap()).map(|row| {
+        let (ip, port, busy, id) = from_row(row);
+        Props {ip: ip, port: port, busy: busy, id: id}}).collect()})
+    .unwrap();
+
+    return resp.render(format!("src/templates/{}.tpl", dev_name), &res[0]);
 }

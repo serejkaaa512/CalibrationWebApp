@@ -25,21 +25,27 @@ class CalibrationTest(unittest.TestCase):
         # видим поля для ввода IP и порта Генератора и Измерителя мощности.
         # в полях для ввода присутствуют значения по умолчанию
         inputbox = self.browser.find_element_by_id('id_generator_ip')
-        self.assertEqual(inputbox.get_attribute('value'), '10.10.0.7')
+        self.assertEqual(inputbox.get_attribute('placeholder'), '10.10.0.7')
 
         inputbox = self.browser.find_element_by_id('id_generator_port')
-        self.assertEqual(inputbox.get_attribute('value'), '3333')
+        self.assertEqual(inputbox.get_attribute('placeholder'), '3333')
 
         inputbox = self.browser.find_element_by_id('id_powermeter_ip')
-        self.assertEqual(inputbox.get_attribute('value'), '10.10.0.7')
+        self.assertEqual(inputbox.get_attribute('placeholder'), '10.10.0.7')
+
+        # заполняем поля ip значениeм
+        inputbox.send_keys('10.10.0.7')
 
         inputbox = self.browser.find_element_by_id('id_powermeter_port')
-        self.assertEqual(inputbox.get_attribute('value'), '5025')
+        self.assertEqual(inputbox.get_attribute('placeholder'), '4444')
 
-        # заполняем поля значениями и нажимаем enter
-        inputbox.clear()
+        # заполняем поля порта значением и нажимаем enter
         inputbox.send_keys('4444')
         inputbox.send_keys(Keys.ENTER)
+        # происходит добавление в список измерителей мощности
+        label_id = self.browser.find_element_by_id('id_10.10.0.7')
+        self.assertEqual(label_id.get_attribute('innerHTML'), '10.10.0.7')
+
         # происходит переход в случае успешного подключения на страницу
         # калибровки
         cur_url = self.browser.current_url

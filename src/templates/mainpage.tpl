@@ -2,26 +2,19 @@
 <h1>
     Привет!!! Это Калибровка!!!!
 </h1>
-<form method="post">
-    <h2>
-        <label>Генераторы:</label>
-    </h2>
+<h2>
+    <label>Генераторы:</label>
+</h2>
+<form method="post" id="gen_form">
     {{#generators}}
-    <input type="radio" value="{{id}}" name="gen_value">
-    <label>{{ip}}</label>
-    <label>:</label>
-    <label>{{port}}</label>
-    {{#busy}}
-    <label>Занят!</label>
-    {{/busy}}
-    {{^busy}}
-    <input type="submit" value="-" name="rem_generator-{{id}}">
-    {{/busy}}
-    <br/>
+    {{> generator }}
     {{/generators}}
     {{^generators}}
     <label>Список пуст!!</label>
     {{/generators}}
+    <div id="generator_send"/>
+</form>
+<form method="post" >
     <table>
         <tr class="row">
             <td class="col">
@@ -37,31 +30,25 @@
                 <input name="generator_port" id="id_generator_port" placeholder="3333" maxlength="5" />
             </td>
             <td class="col">
-                <input type="submit" id="id_generator_add" value="+" name="add_generator" disabled>
+                <input type="button" id="id_generator_add" value="+" name="add_generator" onclick="{AddGenerator($('#id_generator_ip').val(), $('#id_generator_port').val())}" disabled>
             </td>
         </tr>
     </table>
 </form>
-<form method="post">
-    <h2>
-        <label>Измерители мощности:</label>
-    </h2>
+
+<h2>
+    <label>Измерители мощности:</label>
+</h2>
+<form method="post" id="pm_form">
     {{#powermeters}}
-    <input type="radio" value="{{id}}" name="pm_value">
-    <label>{{ip}}</label>
-    <label>:</label>
-    <label>{{port}}</label>
-    {{#busy}}
-    <label>Занят!</label>
-    {{/busy}}
-    {{^busy}}
-    <input type="submit" value="-" name="rem_powermeter-{{id}}">
-    {{/busy}}
-    <br/>
+    {{> powermeter }}
     {{/powermeters}}
     {{^powermeters}}
     <label>Список пуст!!</label>
     {{/powermeters}}
+    <div id="powermeter_send"/>
+</form>
+<form method="post" >
     <table>
         <tr class="row">
             <td class="col">
@@ -77,19 +64,105 @@
                 <input name="powermeter_port" id="id_powermeter_port" placeholder="4444" maxlength="5"/>
             </td>
             <td class="col">
-                <input type="submit" id="id_powermeter_add" value="+" name="add_powermeter" disabled>
+                <input type="button" id="id_powermeter_add" value="+" name="add_powermeter" onclick="{AddPowerMeter($('#id_powermeter_ip').val(), $('#id_powermeter_port').val())}" disabled>
             </td>
         </tr>
     </table>
 </form>
 <br/>
-<form method="post">
-    <input type="submit" value="Соединиться">
+<form method="post" name="connection_form">
+    <input type="button" id="id_connection_btn" value="Соединиться">
+    <input type="hidden" value="" name="generator_chosen_id" id="generator_chosen_id">
+    <input type="hidden" value="" name="powermeter_chosen_id" id="powermeter_chosen_id">
 </form>
 <div class="form-group has-error">
     <span class="help-block">{{error}}</span>
 </div>
 <script>
+    function RemPowerMeter (el, id) {
+        var data = {
+            'id': id
+        };
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/powermeter/rem',
+            'cache':false,
+            'async': true,
+            'data':data,
+            'success':function(response){
+                console.log(response);
+                if (response == "removed")
+                    $(el).parent().remove();
+                else
+                    alert("Couldn't remove !!!!");
+            },
+            'error':function(response, status, xhr){
+                alert(status);
+            }
+        });
+    }
+
+    function RemGenerator (el, id) {
+        var data = {
+            'id': id
+        };
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/generator/rem',
+            'cache':false,
+            'async': true,
+            'data':data,
+            'success':function(response){
+                console.log(response);
+                if (response == "removed")
+                    $(el).parent().remove();
+                else
+                    alert("Couldn't remove !!!!");
+            },
+            'error':function(response, status, xhr){
+                alert(status);
+            }
+        });
+    }
+
+    function AddGenerator (ip, port) {
+        var data = {
+            'ip': ip,
+            'port': port
+        };
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/generator/add',
+            'cache':false,
+            'async': true,
+            'data':data,
+            'success':function(response){
+                $('#generator_send').prepend(response);
+            },
+            'error':function(response, status, xhr){
+                alert(status);
+            }
+        });
+    }
+    function AddPowerMeter (ip, port) {
+        var data = {
+            'ip': ip,
+            'port': port
+        };
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/powermeter/add',
+            'cache':false,
+            'async': true,
+            'data':data,
+            'success':function(response){
+                $('#powermeter_send').prepend(response);
+            },
+            'error':function(response, status, xhr){
+                alert(status);
+            }
+        });
+    }
     function ValidateIPaddress(ipaddress)   
     {  
         if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipaddress))  
@@ -118,6 +191,24 @@
         $( "#id_powermeter_port, #id_generator_port").on('keydown',function(e){
             -1!==$.inArray(e.keyCode,[46,8,9,27,13,110,190])||/65|67|86|88/.test(e.keyCode)&&(!0===e.ctrlKey||!0===e.metaKey)||35<=e.keyCode&&40>=e.keyCode||(e.shiftKey||48>e.keyCode||57<e.keyCode)&&(96>e.keyCode||105<e.keyCode)&&e.preventDefault()});
     });
+    $( "#id_connection_btn").on('click',function(e){
+        var gen_val = $('input[name=gen_value]:checked', '#gen_form').val();
+        var pm_val = $('input[name=pm_value]:checked', '#pm_form').val();
+        
+        if (typeof gen_val === 'undefined') {
+            alert("Не выбран генератор!");
+            return;
+        }
+
+        if (typeof pm_val === 'undefined') {
+           alert("Не выбран измеритель мощности!");
+           return;
+       }
+
+       $('#generator_chosen_id').val(gen_val);
+       $('#powermeter_chosen_id').val(pm_val);
+       document.forms.connection_form.submit();
+   });
 </script>
 
 {{> footer }}

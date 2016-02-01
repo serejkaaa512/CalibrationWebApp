@@ -11,7 +11,7 @@ use mysql::conn::pool::MyPool;
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
-use nickel::{Nickel, HttpRouter, Request, Response, StaticFilesHandler, MiddlewareResult};
+use nickel::{Nickel, HttpRouter, Request, Response, StaticFilesHandler, MiddlewareResult, QueryString};
 use nickel::extensions::Redirect;
 use url::form_urlencoded;
 use groupable::Groupable;
@@ -50,14 +50,22 @@ fn main() {
             return get_all_devices(req, resp)
         }
 
+        get "/calibration/" => |req, resp| {
+            let query =  req.query();
+            let gen_id = query.get("gen_id").unwrap().parse::<i32>().unwrap();
+            let pm_id = query.get("pm_id").unwrap().parse::<i32>().unwrap();
+            println!("{:?}", gen_id);
+            println!("{:?}", pm_id);
+        }
+
         post "/" => |req, resp| {
             let mut form_data = String::new();
             req.origin.read_to_string(&mut form_data).unwrap();
             let map = &get_hashmap_from_query(&*form_data);
-
-            println!("{:?}", map);
-
-            return resp.redirect("/calibration/")
+            let gen_id = &*get_param_from_hashmap(map, "generator_id");
+            let pm_id = &*get_param_from_hashmap(map, "powermeter_id");
+            let redirect_path = format!("/calibration/?gen_id={}&pm_id={}", gen_id, pm_id);
+            return resp.redirect(redirect_path)
         }
 
         post "/generator/add" => |req, resp| {
@@ -68,11 +76,11 @@ fn main() {
             return add_device_to_db(req, resp, "powermeter")
         }
 
-        post "/generator/rem" => |req, resp| {
+        delete "/generator/:id" => |req, resp| {
             return rem_device_from_db(req, resp, "generator")
         }
 
-        post "/powermeter/rem" => |req, resp| {
+        delete "/powermeter/:id" => |req, resp| {
             return rem_device_from_db(req, resp, "powermeter")
         }
         ));
@@ -111,10 +119,7 @@ fn get_devices_from_db(pool: &Arc<MyPool>, dev_name: &str) -> Vec<Props> {
 
 
 fn rem_device_from_db<'a>(req: &mut Request, resp: Response<'a>, dev_name: &str) -> MiddlewareResult<'a> {
-    let mut form_data = String::new();
-    req.origin.read_to_string(&mut form_data).unwrap();
-    let map = &get_hashmap_from_query(&*form_data);
-    let id = &*get_param_from_hashmap(map, "id");
+    let id = req.param("id");
     let pool = req.db_connection();
     let _ = pool.prep_exec(format!("DELETE FROM {}s WHERE id=?", dev_name),(id,));
     resp.send("removed")

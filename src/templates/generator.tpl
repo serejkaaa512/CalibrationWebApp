@@ -1,4 +1,4 @@
-<div>
+<div class="gen_item">
     <input type="radio" value="{{id}}" name="gen_value">
     <label id="id_{{ip}}">{{ip}}</label>
     <label>:</label>

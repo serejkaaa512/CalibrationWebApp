@@ -1,4 +1,4 @@
-<div>
+<div class="pm_item">
     <input type="radio" value="{{id}}" name="pm_value">
     <label id="id_{{ip}}">{{ip}}</label>
     <label>:</label>

@@ -10,7 +10,7 @@
     {{> generator }}
     {{/generators}}
     {{^generators}}
-    <label>Список пуст!!</label>
+    <label id="id_empty_gen">Список пуст!!</label>
     {{/generators}}
     <div id="generator_send"/>
 </form>
@@ -44,7 +44,7 @@
     {{> powermeter }}
     {{/powermeters}}
     {{^powermeters}}
-    <label>Список пуст!!</label>
+    <label id="id_empty_pm">Список пуст!!</label>
     {{/powermeters}}
     <div id="powermeter_send"/>
 </form>
@@ -72,29 +72,25 @@
 <br/>
 <form method="post" name="connection_form">
     <input type="button" id="id_connection_btn" value="Соединиться">
-    <input type="hidden" value="" name="generator_chosen_id" id="generator_chosen_id">
-    <input type="hidden" value="" name="powermeter_chosen_id" id="powermeter_chosen_id">
+    <input type="hidden" value="" name="generator_id" id="generator_id">
+    <input type="hidden" value="" name="powermeter_id" id="powermeter_id">
 </form>
-<div class="form-group has-error">
-    <span class="help-block">{{error}}</span>
-</div>
 <script>
     function RemPowerMeter (el, id) {
-        var data = {
-            'id': id
-        };
         jQuery.ajax({
-            'type':'POST',
-            'url':'/powermeter/rem',
+            'type':'DELETE',
+            'url':'/powermeter/'+id,
             'cache':false,
             'async': true,
-            'data':data,
             'success':function(response){
                 console.log(response);
                 if (response == "removed")
                     $(el).parent().remove();
                 else
                     alert("Couldn't remove !!!!");
+                var length = $('.pm_item').length;
+                if (length == 0)
+                    $('#id_empty_pm').show();
             },
             'error':function(response, status, xhr){
                 alert(status);
@@ -103,21 +99,42 @@
     }
 
     function RemGenerator (el, id) {
-        var data = {
-            'id': id
-        };
         jQuery.ajax({
-            'type':'POST',
-            'url':'/generator/rem',
+            'type':'DELETE',
+            'url':'/generator/'+id,
             'cache':false,
             'async': true,
-            'data':data,
             'success':function(response){
                 console.log(response);
                 if (response == "removed")
                     $(el).parent().remove();
                 else
                     alert("Couldn't remove !!!!");
+                var length = $('.gen_item').length;
+                if (length == 0)
+                    $('#id_empty_gen').show();
+            },
+            'error':function(response, status, xhr){
+                alert(status);
+            }
+        });
+    }
+
+    
+    function AddPowerMeter (ip, port) {
+        var data = {
+            'ip': ip,
+            'port': port
+        };
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/powermeter/add',
+            'cache':false,
+            'async': true,
+            'data':data,
+            'success':function(response){
+                $('#powermeter_send').prepend(response);
+                $('#id_empty_pm').hide();
             },
             'error':function(response, status, xhr){
                 alert(status);
@@ -138,31 +155,14 @@
             'data':data,
             'success':function(response){
                 $('#generator_send').prepend(response);
+                $('#id_empty_gen').hide();
             },
             'error':function(response, status, xhr){
                 alert(status);
             }
         });
     }
-    function AddPowerMeter (ip, port) {
-        var data = {
-            'ip': ip,
-            'port': port
-        };
-        jQuery.ajax({
-            'type':'POST',
-            'url':'/powermeter/add',
-            'cache':false,
-            'async': true,
-            'data':data,
-            'success':function(response){
-                $('#powermeter_send').prepend(response);
-            },
-            'error':function(response, status, xhr){
-                alert(status);
-            }
-        });
-    }
+    
     function ValidateIPaddress(ipaddress)   
     {  
         if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipaddress))  
@@ -192,23 +192,23 @@
             -1!==$.inArray(e.keyCode,[46,8,9,27,13,110,190])||/65|67|86|88/.test(e.keyCode)&&(!0===e.ctrlKey||!0===e.metaKey)||35<=e.keyCode&&40>=e.keyCode||(e.shiftKey||48>e.keyCode||57<e.keyCode)&&(96>e.keyCode||105<e.keyCode)&&e.preventDefault()});
     });
     $( "#id_connection_btn").on('click',function(e){
-        var gen_val = $('input[name=gen_value]:checked', '#gen_form').val();
-        var pm_val = $('input[name=pm_value]:checked', '#pm_form').val();
+        var gen_id = $('input[name=gen_value]:checked', '#gen_form').val();
+        var pm_id = $('input[name=pm_value]:checked', '#pm_form').val();
         
-        if (typeof gen_val === 'undefined') {
+        if (typeof gen_id === 'undefined') {
             alert("Не выбран генератор!");
             return;
         }
 
-        if (typeof pm_val === 'undefined') {
-           alert("Не выбран измеритель мощности!");
-           return;
-       }
+        if (typeof pm_id === 'undefined') {
+         alert("Не выбран измеритель мощности!");
+         return;
+     }
 
-       $('#generator_chosen_id').val(gen_val);
-       $('#powermeter_chosen_id').val(pm_val);
-       document.forms.connection_form.submit();
-   });
+     $('#generator_id').val(gen_id);
+     $('#powermeter_id').val(pm_id);
+     document.forms.connection_form.submit();
+ });
 </script>
 
 {{> footer }}

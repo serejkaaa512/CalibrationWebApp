@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
 use nickel::{Nickel, HttpRouter, Request, Response, StaticFilesHandler, MiddlewareResult, QueryString};
+use nickel::status::StatusCode;
 use url::form_urlencoded;
 use groupable::Groupable;
 use mysql::value::from_row;
@@ -80,8 +81,107 @@ fn main() {
         delete "/powermeter/:id" => |req, resp| {
             return rem_device_from_db(req, resp, "powermeter")
         }
+
+        post "/generator/:id/set_power/:p" => |req, resp| {
+            return set_generator_power(req, resp)
+        }
+
+        post "/generator/:id/turn_on" => |req, resp| {
+            return turn_generator_on(req, resp)
+        }
+
+        post "/generator/:id/turn_off" => |req, resp| {
+            return turn_generator_off(req, resp)
+        }
+        
+        post "/generator/:id/set_freq/:freq" => |req, resp| {
+            return set_generator_freq(req, resp)
+        }
+
+        get "/powermeter/:id/:channel/power" => |req, resp| {
+            return get_powermeter_power(req, resp)
+        }
+
         ));
-    server.listen("0.0.0.0:6767");
+server.listen("0.0.0.0:6767");
+}
+
+fn get_powermeter(id: &str, pool: &Arc<MyPool>) -> PowerMeter {
+    let pm_props = get_device_from_db(&pool, "powermeters", id);
+    PowerMeter::new(&*(pm_props.ip), pm_props.port)
+}
+
+fn get_generator(id: &str, pool: &Arc<MyPool>) -> Generator {
+    let gen_props = get_device_from_db(&pool, "generators", id);
+    Generator::new(&*(gen_props.ip), gen_props.port)
+}
+
+fn get_powermeter_power<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
+    let id = req.param("id").unwrap();
+    let channel = req.param("channel").unwrap().parse::<u8>().unwrap();
+    let pool = req.db_connection();
+    let mut powermeter = get_powermeter(id, &pool);
+    let power = powermeter.get_power(channel);
+    match power {
+        Ok(p) => resp.send(p.to_string()),
+        Err(e) => {
+            resp.set(StatusCode::BadRequest);
+            resp.send(e.to_string())
+        },
+    }
+}
+
+fn set_generator_freq<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
+    let id = req.param("id").unwrap();
+    let freq = req.param("freq").unwrap().parse::<f32>().unwrap();
+    let pool = req.db_connection();
+    let mut generator = get_generator(id, &pool);
+    match generator.set_freq(freq) {
+       Ok(_) => resp.send("freq is setted!"),
+       Err(e) => {
+        resp.set(StatusCode::BadRequest);
+        resp.send(e.to_string())
+    }}
+}
+
+fn turn_generator_off<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
+    let id = req.param("id").unwrap();
+    let pool = req.db_connection();
+    let mut generator = get_generator(id, &pool);
+    match generator.set_power_off() {
+        Some(e) => {
+            resp.set(StatusCode::BadRequest);
+            resp.send(e.to_string())
+        },
+        None => resp.send("power is turned off!"),
+    }
+}
+
+
+fn turn_generator_on<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
+    let id = req.param("id").unwrap();
+    let pool = req.db_connection();
+    let mut generator = get_generator(id, &pool);
+    match generator.set_power_on() {
+        Some(e) => {
+            resp.set(StatusCode::BadRequest);
+            resp.send(e.to_string())
+        },
+        None => resp.send("power is turned on!"),
+    }
+}
+
+fn set_generator_power<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
+    let id = req.param("id").unwrap();
+    let p = req.param("p").unwrap().parse::<f32>().unwrap();
+    let pool = req.db_connection();
+    let mut generator = get_generator(id, &pool);
+    match generator.set_power(p) {
+       Ok(_) => resp.send("power is setted!"),
+       Err(e) => {
+        resp.set(StatusCode::BadRequest);
+        resp.send(e.to_string())
+    }}
 }
 
 
@@ -94,7 +194,7 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     let fmax = query.get("fmax").unwrap();
     let fstep = query.get("fstep").unwrap();
     let pgen = query.get("pgen").unwrap();
-    
+
     let name = query.get("name").unwrap();
     let time = time::strftime("%y_%m_%d__%H_%M_%S", &time::now()).unwrap();
     let table_name = &*(name.to_string() + "_" + &*time);
@@ -105,10 +205,12 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     let _ = stmt.execute((gen_id, pm_id, table_name, fmin, fmax, fstep, pgen));
 
     let create_str = format!(
-    "CREATE TABLE `{}` ( `F` FLOAT, `P` FLOAT)ENGINE=MyISAM", table_name);
+        "CREATE TABLE `{}` ( `F` FLOAT, `P` FLOAT)ENGINE=MyISAM", table_name);
     let _ = pool.prep_exec(create_str, ());
 
     let mut data: HashMap<&str, &str> = HashMap::new();
+    data.insert("gen_id", gen_id);
+    data.insert("pm_id", pm_id);
     data.insert("name", name);
     data.insert("fmin", fmin);
     data.insert("fmax", fmax);
@@ -150,7 +252,6 @@ fn get_param_from_hashmap(map: &HashMap<String, Vec<String>>, param_name: &str) 
     .unwrap()
     .to_string()
 }
-
 
 fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
     let pool = req.db_connection();

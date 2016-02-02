@@ -71,7 +71,7 @@
 </form>
 <br/>
 <form method="get" name="connection_form" action="/calibration/options">
-    <input type="button" id="id_connection_btn" value="Соединиться">
+    <input type="button" id="id_connection_btn" value="К настройкам!">
     <input type="hidden" value="" name="generator_id" id="generator_id">
     <input type="hidden" value="" name="powermeter_id" id="powermeter_id">
 </form>

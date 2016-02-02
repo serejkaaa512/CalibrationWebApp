@@ -10,6 +10,7 @@ groupable = "*"
 typemap="*"
 plugin="*"
 rustc-serialize = "*"
+time="*"
 
 [dependencies.mysql]
 mysql = "*"

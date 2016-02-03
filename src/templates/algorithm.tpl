@@ -1,14 +1,14 @@
 {{> header }}
-<h1>
-    Поехали!!!!
-</h1>
-<table>
+<div class="text-center">
+    <h1>
+        Поехали!!!!
+    </h1>
+</div>
+<table class="table table-striped">
     <tr class="row">
         <td class="col">
             Название: {{name}}
         </td>
-    </tr>
-    <tr class="row">
         <td class="col">
             Fmin: {{fmin}}
         </td>
@@ -18,17 +18,17 @@
         <td class="col">
             Fmax: {{fmax}}
         </td>
-    </tr>
-    <tr class="row">
         <td class="col">
             P: {{pgen}}
         </td>
     </tr>
 </table>
-<h2>
-    Результат!!!!
-</h2>
-<table id="res_table">
+<div class="text-center">
+    <h3>
+        Получаемые значения:
+    </h3>
+</div>
+<table class="table table-striped" id="res_table">
     <tr class="row">
         <td class="col">
             Частота

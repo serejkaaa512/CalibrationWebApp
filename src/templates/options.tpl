@@ -1,61 +1,69 @@
 {{> header }}
-<h1>
-    Введи настройки!!!!
-</h1>
+<div class="text-center">
+    <h1>
+        Настройки алгоритма калибровки.
+    </h1>
+</div>
 {{#generator}}
-<h2>Генератор: {{ip}}:{{port}}</h2>
+<div class="text-center">
+    <h3>Выбран генератор - {{ip}}:{{port}}.</h3>
+</div>
 {{/generator}}
 {{#powermeter}}
-<h2>Измеритель мощности: {{ip}}:{{port}}</h2>
+<div class="text-center">
+    <h3>Выбран измеритель мощности - {{ip}}:{{port}}.</h3>
+</div>
 {{/powermeter}}
-<h2>Настройка измерений:</h2>
 <div>
     <form method="get" action="/calibration/algorithm/">
-        <table>
-            <tr class="row">
-                <td class="col">
-                    Название:
-                </td>
-                <td class="col">
-                    <input name="name" id="id_name" placeholder="Калибровка кабеля 5м" />
-                </td>
-            </tr>
-            <tr class="row">
-                <td class="col">
-                    Fmin:
-                </td>
-                <td class="col">
-                    <input name="fmin" id="id_fmin" placeholder="10"/>
-                </td>
-                <td class="col">
-                    Fшаг:
-                </td>
-                <td class="col">
-                    <input name="fstep" id="id_fstep" placeholder="10"/>
-                </td>
-                <td class="col">
-                    Fmax:
-                </td>
-                <td class="col">
-                    <input name="fmax" id="id_fmax" placeholder="100" />
-                </td>
-            </tr>
-            <tr class="row">
-                <td class="col">
-                    P:
-                </td>
-                <td class="col">
-                    <input name="pgen" id="id_pgen" placeholder="0"/>
-                </td>
-            </tr>
-            <tr class="row">
-                <td class="col">
-                    <input type="submit" id="id_start" value="save" name="save" disabled>
-                </td>
-            </tr>
-        </table>
-        <input type="hidden" value="{{#generator}}{{id}}{{/generator}}" name="gen_id" id="gen_id">
-        <input type="hidden" value="{{#powermeter}}{{id}}{{/powermeter}}" name="pm_id" id="pm_id">
+        <div class="text-center">
+
+            <table class="table">
+                <tr class="row">
+                    <td class="col">
+                        Название:
+                    </td>
+                    <td class="col">
+                        <input name="name" id="id_name" placeholder="Калибровка кабеля 5м" />
+                    </td>
+                </tr>
+                <tr class="row">
+                    <td class="col">
+                        Fmin, Гц:
+                    </td>
+                    <td class="col">
+                        <input name="fmin" id="id_fmin" placeholder="10"/>
+                    </td>
+                </tr>
+                <tr class="row">
+                    <td class="col">
+                        Fшаг, Гц:
+                    </td>
+                    <td class="col">
+                        <input name="fstep" id="id_fstep" placeholder="10"/>
+                    </td>
+                </tr>
+                <tr class="row">
+                    <td class="col">
+                        Fmax, Гц:
+                    </td>
+                    <td class="col">
+                        <input name="fmax" id="id_fmax" placeholder="100" />
+                    </td>
+                </tr>
+                <tr class="row">
+                    <td class="col">
+                        P, дБм:
+                    </td>
+                    <td class="col">
+                        <input name="pgen" id="id_pgen" placeholder="0"/>
+                    </td>
+                </tr>
+            </table>
+            <input class="btn btn-lg btn-success" type="submit" id="id_start" value="Старт" disabled>
+            <input type="hidden" value="{{#generator}}{{id}}{{/generator}}" name="gen_id" id="gen_id">
+            <input type="hidden" value="{{#powermeter}}{{id}}{{/powermeter}}" name="pm_id" id="pm_id">
+        </div>
     </form>
 </div>
 <script>

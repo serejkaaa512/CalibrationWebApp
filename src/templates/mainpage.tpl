@@ -1,80 +1,101 @@
 {{> header }}
-<h1>
-    Привет!!! Это Калибровка!!!!
-</h1>
-<h2>
-    <label>Генераторы:</label>
-</h2>
-<form method="post" id="gen_form">
-    {{#generators}}
-    {{> generator }}
-    {{/generators}}
-    {{^generators}}
-    <label id="id_empty_gen">Список пуст!!</label>
-    {{/generators}}
-    <div id="generator_send"/>
-</form>
-<form method="post" >
-    <table>
-        <tr class="row">
-            <td class="col">
-                ip:
-            </td>
-            <td class="col">
-                <input name="generator_ip" id="id_generator_ip" placeholder="10.10.0.7" />
-            </td>
-            <td class="col">
-                port:
-            </td>
-            <td class="col" id="staticParent">
-                <input name="generator_port" id="id_generator_port" placeholder="3333" maxlength="5" />
-            </td>
-            <td class="col">
-                <input type="button" id="id_generator_add" value="+" name="add_generator" onclick="{AddGenerator($('#id_generator_ip').val(), $('#id_generator_port').val())}" disabled>
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="text-center">
+    <h1>
+        Привет!!! Это Калибровка!!!!
+    </h1>
+</div>
+<div class="text-center">
+    <h2>
+        <label>Выбери генератор.</label>
+    </h2>
+</div>
+<div class="text-center">
+    <form method="post" id="gen_form" >
+        {{#generators}}
+        {{> generator }}
+        {{/generators}}
+        {{^generators}}
+        <label class="label label-warning" id="id_empty_gen">Список пуст!!</label>
+        {{/generators}}
+        <div id="generator_send"/>
+    </form>
+</div>
+<div >
+    <form method="post" >
+        <div >
+            <table class="table"> 
+                <tr class="row">
+                    <td class="col">
+                        ip:
+                    </td>
+                    <td class="col">
+                        <input name="generator_ip" id="id_generator_ip" placeholder="10.10.0.7" />
+                    </td>
+                    <td class="col">
+                        port:
+                    </td>
+                    <td class="col" id="staticParent">
+                        <input name="generator_port" id="id_generator_port" placeholder="3333" maxlength="5" />
+                    </td>
+                    <td class="col">
+                        <input  class="btn btn-lg btn-success"  type="button" id="id_generator_add" value="+" name="add_generator" onclick="{AddGenerator($('#id_generator_ip').val(), $('#id_generator_port').val())}" disabled>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </form>
+</div>
 
-<h2>
-    <label>Измерители мощности:</label>
-</h2>
-<form method="post" id="pm_form">
-    {{#powermeters}}
-    {{> powermeter }}
-    {{/powermeters}}
-    {{^powermeters}}
-    <label id="id_empty_pm">Список пуст!!</label>
-    {{/powermeters}}
-    <div id="powermeter_send"/>
-</form>
-<form method="post" >
-    <table>
-        <tr class="row">
-            <td class="col">
-                ip:
-            </td>
-            <td class="col">
-                <input name="powermeter_ip" id="id_powermeter_ip" placeholder="10.10.0.7" />
-            </td>
-            <td class="col">
-                port:
-            </td>
-            <td class="col">
-                <input name="powermeter_port" id="id_powermeter_port" placeholder="4444" maxlength="5"/>
-            </td>
-            <td class="col">
-                <input type="button" id="id_powermeter_add" value="+" name="add_powermeter" onclick="{AddPowerMeter($('#id_powermeter_ip').val(), $('#id_powermeter_port').val())}" disabled>
-            </td>
-        </tr>
-    </table>
-</form>
+<div class="text-center">
+    <h2>
+        <label>Выбери измеритель мощности.</label>
+    </h2>
+</div>
+<div class="text-center">
+    <form method="post" id="pm_form">
+        {{#powermeters}}
+        {{> powermeter }}
+        {{/powermeters}}
+        {{^powermeters}}
+        <label class="label label-warning" id="id_empty_pm">Список пуст!!</label>
+        {{/powermeters}}
+        <div id="powermeter_send"/>
+    </form>
+</div>
+
+<div class="text-center">
+    <form method="post" >
+        <div class="col-md-6">
+            <table class="table">
+                <tr class="row">
+                    <td class="col">
+                        ip:
+                    </td>
+                    <td class="col">
+                        <input name="powermeter_ip" id="id_powermeter_ip" placeholder="10.10.0.7" />
+                    </td>
+                    <td class="col">
+                        port:
+                    </td>
+                    <td class="col">
+                        <input name="powermeter_port" id="id_powermeter_port" placeholder="4444" maxlength="5"/>
+                    </td>
+                    <td class="col">
+                        <input class="btn btn-lg btn-success" type="button" id="id_powermeter_add" value="+" name="add_powermeter" onclick="{AddPowerMeter($('#id_powermeter_ip').val(), $('#id_powermeter_port').val())}" disabled>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </form>
+</div>
 <br/>
-<form method="get" name="connection_form" action="/calibration/options">
-    <input type="button" id="id_connection_btn" value="К настройкам!">
-    <input type="hidden" value="" name="generator_id" id="generator_id">
-    <input type="hidden" value="" name="powermeter_id" id="powermeter_id">
-</form>
+<div class="text-center">
+    <form method="get" name="connection_form" action="/calibration/options">
+        <input class="btn btn-lg btn-success" type="button" id="id_connection_btn" value="К настройкам алгоритма">
+        <input type="hidden" value="" name="generator_id" id="generator_id">
+        <input type="hidden" value="" name="powermeter_id" id="powermeter_id">
+    </form>
+</div>
 <script>
     function RemPowerMeter (el, id) {
         jQuery.ajax({

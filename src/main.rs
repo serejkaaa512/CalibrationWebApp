@@ -104,8 +104,8 @@ fn main() {
         }
 
         ));
-    
-    server.listen("0.0.0.0:6767");
+
+server.listen("0.0.0.0:6767");
 }
 
 fn get_powermeter(id: &str, pool: &Arc<MyPool>) -> Option<PowerMeter> {
@@ -230,13 +230,13 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
 
     let name = query.get("name").unwrap();
     let time = time::strftime("%d/%m/%y %H:%M:%S", &time::now()).unwrap();
-    let table_name = &*(name.to_string() + "_" + &*time);
+    let table_name = &*(name.to_string() + " " + &*time);
 
     let insert_str = 
     r"INSERT INTO reports(id_gen, id_pm, Name, Fmin, Fmax, Fstep, Pgen, Pchannel) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     let mut stmt = pool.prepare(insert_str).unwrap();
-    let _ = stmt.execute((gen_id, pm_id, table_name, fmin, fmax, fstep, pgen));
+    let _ = stmt.execute((gen_id, pm_id, table_name, fmin, fmax, fstep, pgen, pchannel));
 
     let create_str = format!(
         "CREATE TABLE `{}` ( `F` FLOAT, `P` FLOAT)ENGINE=MyISAM", table_name);

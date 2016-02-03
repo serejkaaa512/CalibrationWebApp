@@ -60,7 +60,6 @@
                 return;
             fcur += fstep;
             fcur = Number(fcur.toFixed(3));
-            console.log(fcur);
         }
         Generator_turn_off(gen_id);
     });
@@ -74,7 +73,6 @@
             'cache':false,
             'async': false,
             'success':function(response){
-                console.log(response);
                 flag = true;
             },
             'error':function(response, status, xhr){
@@ -95,7 +93,6 @@
             'cache':false,
             'async': false,
             'success':function(response){
-                console.log(response);
                 flag = true;
             },
             'error':function(response, status, xhr){
@@ -114,7 +111,6 @@
             'cache':false,
             'async': false,
             'success':function(response){
-                console.log(response);
                 flag = true;
             },
             'error':function(response, status, xhr){
@@ -133,7 +129,6 @@
             'async': false,
             'success':function(response){
                 $('#res_table').append("<tr><td>"+fcur+"</td><td>"+response+"</td></tr>")
-                console.log(response);
                 flag = true;
             },
             'error':function(response, status, xhr){
@@ -152,7 +147,6 @@
             'cache':false,
             'async': false,
             'success':function(response){
-                console.log(response);
                 flag = true;
             },
             'error':function(response, status, xhr){

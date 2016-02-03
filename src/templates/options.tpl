@@ -17,7 +17,6 @@
 <div>
     <form method="get" action="/calibration/algorithm/">
         <div class="text-center">
-
             <table class="table">
                 <tr class="row">
                     <td class="col">
@@ -29,7 +28,7 @@
                 </tr>
                 <tr class="row">
                     <td class="col">
-                        Fmin, Гц:
+                        Начальная частота, МГц:
                     </td>
                     <td class="col">
                         <input name="fmin" id="id_fmin" placeholder="10"/>
@@ -37,15 +36,7 @@
                 </tr>
                 <tr class="row">
                     <td class="col">
-                        Fшаг, Гц:
-                    </td>
-                    <td class="col">
-                        <input name="fstep" id="id_fstep" placeholder="10"/>
-                    </td>
-                </tr>
-                <tr class="row">
-                    <td class="col">
-                        Fmax, Гц:
+                        Конечная частота, МГц:
                     </td>
                     <td class="col">
                         <input name="fmax" id="id_fmax" placeholder="100" />
@@ -53,7 +44,15 @@
                 </tr>
                 <tr class="row">
                     <td class="col">
-                        P, дБм:
+                        Шаг частоты, МГц:
+                    </td>
+                    <td class="col">
+                        <input name="fstep" id="id_fstep" placeholder="10"/>
+                    </td>
+                </tr>
+                <tr class="row">
+                    <td class="col">
+                        Мощность генератора, дБм:
                     </td>
                     <td class="col">
                         <input name="pgen" id="id_pgen" placeholder="0"/>
@@ -88,7 +87,7 @@
             $( "#id_start" ).removeAttr("disabled");
     });
     $(function() {
-        $( "#id_fstep, #id_pgen, #id_fmin, #id_fmax, #id_pchannel ").on('keydown',function(e){
+        $( "#id_fstep, #id_fmin, #id_fmax, #id_pchannel ").on('keydown',function(e){
             -1!==$.inArray(e.keyCode,[46,8,9,27,13,110,190])||/65|67|86|88/.test(e.keyCode)&&(!0===e.ctrlKey||!0===e.metaKey)||35<=e.keyCode&&40>=e.keyCode||(e.shiftKey||48>e.keyCode||57<e.keyCode)&&(96>e.keyCode||105<e.keyCode)&&e.preventDefault()});
     });
 </script>

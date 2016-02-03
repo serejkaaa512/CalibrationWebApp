@@ -11,6 +11,7 @@ typemap="*"
 plugin="*"
 rustc-serialize = "*"
 time="*"
+regex="*"
 
 [dependencies.mysql]
 mysql = "*"

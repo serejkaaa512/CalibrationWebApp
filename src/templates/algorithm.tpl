@@ -7,16 +7,16 @@
 <table class="table table-striped">
     <tr class="row">
         <td class="col">
-            Fmin: {{fmin}}
+            Начальная частота, МГц: {{fmin}}
         </td>
         <td class="col">
-            Fшаг: {{fstep}}
+            Конечная частота, МГц: {{fmax}}
         </td>
         <td class="col">
-            Fmax: {{fmax}}
+            Шаг частоты, МГц: {{fstep}}
         </td>
         <td class="col">
-            P: {{pgen}}
+            Мощность генератора, дБм: {{pgen}}
         </td>
         <td class="col">
             Канал ИМ: {{pchannel}}
@@ -29,7 +29,7 @@
     </h3>
 </div>
 <table class="table table-striped" id="res_table">
-    <tr><td>Частота, Гц</td><td>Мощность, дБм</td></tr>
+    <tr><td>Частота, МГц</td><td>Мощность, дБм</td></tr>
 </table>
 
 <h3>
@@ -53,12 +53,14 @@
             return;
         if (!Generator_turn_on(gen_id))
             return;
-        while (fcur < fmax) {
+        while (fcur <= fmax) {
             if (!Generator_set_freq(gen_id, fcur))
                 return;
             if (!PowerMeter_get_power(pm_id))
                 return;
             fcur += fstep;
+            fcur = Number(fcur.toFixed(3));
+            console.log(fcur);
         }
         Generator_turn_off(gen_id);
     });
@@ -68,7 +70,7 @@
         var flag = false;
         jQuery.ajax({
             'type':'POST',
-            'url':'/generator/'+gen_id+'/set_power/'+pgen,
+            'url':'/generator/'+gen_id+'/set_power/'+ pgen,
             'cache':false,
             'async': false,
             'success':function(response){
@@ -108,7 +110,7 @@
         var flag = false;
         jQuery.ajax({
             'type':'POST',
-            'url':'/generator/'+gen_id+'/set_freq/'+freq,
+            'url':'/generator/'+gen_id+'/set_freq/'+ freq,
             'cache':false,
             'async': false,
             'success':function(response){

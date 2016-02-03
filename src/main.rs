@@ -6,7 +6,9 @@ extern crate groupable;
 extern crate mysql;
 extern crate rustc_serialize;
 extern crate time;
+extern crate regex;
 
+use regex::Regex;
 use calibration_web_app::{Generator, PowerMeter, MysqlMiddleware, MysqlRequestExtensions};
 use mysql::conn::pool::MyPool;
 use std::collections::HashMap;
@@ -24,12 +26,6 @@ struct Props {
     port: u16,
     busy: bool,
     id: i32
-}
-
-#[derive(RustcDecodable, RustcEncodable)]
-struct Devices {
-    generators: Vec<Props>,
-    powermeters: Vec<Props>,
 }
 
 #[derive(RustcDecodable, RustcEncodable)]
@@ -53,7 +49,12 @@ fn main() {
 
     server.utilize(MysqlMiddleware::new("calibr", "root", "1234"));
 
+    let set_freq_regex = Regex::new(r"/generator/(?P<id>\d+)/set_freq/(?P<freq>[-+]?(\d*[.])?\d+)").unwrap();
+
+    let set_pow_regex = Regex::new(r"/generator/(?P<id>\d+)/set_power/(?P<p>[-+]?(\d*[.])?\d+)").unwrap();
+
     server.utilize(router!(
+
         get "/" => |req, resp| {
             return get_all_devices(req, resp)
         }
@@ -82,7 +83,7 @@ fn main() {
             return rem_device_from_db(req, resp, "powermeter")
         }
 
-        post "/generator/:id/set_power/:p" => |req, resp| {
+        post set_pow_regex => |req, resp| {
             return set_generator_power(req, resp)
         }
 
@@ -94,7 +95,7 @@ fn main() {
             return turn_generator_off(req, resp)
         }
         
-        post "/generator/:id/set_freq/:freq" => |req, resp| {
+        post set_freq_regex => |req, resp| {
             return set_generator_freq(req, resp)
         }
 
@@ -103,7 +104,8 @@ fn main() {
         }
 
         ));
-server.listen("0.0.0.0:6767");
+    
+    server.listen("0.0.0.0:6767");
 }
 
 fn get_powermeter(id: &str, pool: &Arc<MyPool>) -> Option<PowerMeter> {
@@ -148,7 +150,6 @@ fn set_generator_freq<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlewa
             return resp.send("Невозможно соединиться с генератором.")
         },
     };
-
     match generator.set_freq(freq) {
        Ok(_) => resp.send("freq is setted!"),
        Err(e) => {
@@ -261,7 +262,9 @@ fn get_report_options<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareRe
     let pm_id = query.get("powermeter_id").unwrap();
     let generator = get_device_from_db(&pool, "generators", gen_id);
     let powermeter = get_device_from_db(&pool, "powermeters", pm_id);
-    let data = Options {generator: generator, powermeter: powermeter};
+    let mut data: HashMap<&str, Props> = HashMap::new();
+    data.insert("generator", generator);
+    data.insert("powermeter", powermeter);
     return resp.render("src/templates/options.tpl", &data)
 }
 
@@ -291,7 +294,9 @@ fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResul
     let pool = req.db_connection();
     let generators = get_devices_from_db(&pool, "generators");
     let powermeters = get_devices_from_db(&pool, "powermeters");
-    let data = Devices{ generators: generators, powermeters: powermeters };
+    let mut data: HashMap<&str, Vec<Props>> = HashMap::new();
+    data.insert("generators", generators);
+    data.insert("powermeters", powermeters);
     return resp.render("src/templates/mainpage.tpl", &data);
 }
 

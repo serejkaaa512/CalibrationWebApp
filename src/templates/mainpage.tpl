@@ -89,6 +89,8 @@
     </form>
 </div>
 <br/>
+<br/>
+<br/>
 <div class="text-center">
     <form method="get" name="connection_form" action="/calibration/options">
         <input class="btn btn-lg btn-success" type="button" id="id_connection_btn" value="К настройкам алгоритма">

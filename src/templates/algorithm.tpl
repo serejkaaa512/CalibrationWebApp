@@ -1,14 +1,11 @@
 {{> header }}
 <div class="text-center">
     <h1>
-        Поехали!!!!
+        {{name}}
     </h1>
 </div>
 <table class="table table-striped">
     <tr class="row">
-        <td class="col">
-            Название: {{name}}
-        </td>
         <td class="col">
             Fmin: {{fmin}}
         </td>
@@ -21,32 +18,35 @@
         <td class="col">
             P: {{pgen}}
         </td>
+        <td class="col">
+            Канал ИМ: {{pchannel}}
+        </td>
     </tr>
 </table>
 <div class="text-center">
     <h3>
-        Получаемые значения:
+        Полученные значения:
     </h3>
 </div>
 <table class="table table-striped" id="res_table">
-    <tr class="row">
-        <td class="col">
-            Частота
-        </td>
-        <td class="col">
-            Мощность
-        </td>
-    </tr>
+    <tr><td>Частота, Гц</td><td>Мощность, дБм</td></tr>
 </table>
+
+<h3>
+    <div class="alert alert-danger" id="id_error">
+        
+    </div>
+</h3>
 <script>
     var fmin = {{fmin}};
     var fmax = {{fmax}};
     var fstep = {{fstep}};
     var pgen = {{pgen}};
+    var pchannel = {{pchannel}};
     var gen_id = {{gen_id}};
     var pm_id = {{pm_id}};
     var fcur = fmin;
-
+    $('#id_error').hide();
 
     $(document).ready(function() {
         if (!Generator_set_power(gen_id, pgen))
@@ -76,7 +76,8 @@
                 flag = true;
             },
             'error':function(response, status, xhr){
-                alert(status);
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
             }
         });
 
@@ -96,7 +97,8 @@
                 flag = true;
             },
             'error':function(response, status, xhr){
-                alert(status);
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
             }
         });
         return flag;
@@ -114,7 +116,8 @@
                 flag = true;
             },
             'error':function(response, status, xhr){
-                alert(status);
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
             }
         });
         return flag;
@@ -123,7 +126,7 @@
         var flag = false;
         jQuery.ajax({
             'type':'GET',
-            'url':'/powermeter/'+pm_id+'/'+0+'/power',
+            'url':'/powermeter/'+pm_id+'/'+pchannel+'/power',
             'cache':false,
             'async': false,
             'success':function(response){
@@ -132,7 +135,8 @@
                 flag = true;
             },
             'error':function(response, status, xhr){
-                alert(status);
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
             }
         });
         return flag;
@@ -150,7 +154,8 @@
                 flag = true;
             },
             'error':function(response, status, xhr){
-                alert(status);
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
             }
         });
         return flag;

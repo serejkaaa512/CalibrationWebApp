@@ -17,6 +17,7 @@ use std::time::Duration;
 use std::error::Error;
 use std::str::FromStr;
 use std::cmp::PartialEq;
+use std::fmt::Display;
 
 #[derive(Debug)]
 pub struct Unit {
@@ -43,7 +44,7 @@ impl Unit{
         Ok(result)
     }
 
-    pub fn set_query<T: FromStr + PartialEq>(&mut self, value: T, set: &str, get: &str) -> Result<T, Box<Error>> 
+    pub fn set_query<T: FromStr + PartialEq + Display>(&mut self, value: T, set: &str, get: &str) -> Result<T, Box<Error>> 
             where <T as FromStr>::Err: 'static + Error {
         try!(self.send(b"*CLS\n"));
         try!(self.send(set.as_bytes()).map_err(|_| self.get_errors()));
@@ -51,7 +52,7 @@ impl Unit{
         let res = try!(self.query(get.as_bytes()).map_err(|_| self.get_errors()));
         let res_v: T = try!(res.trim().parse());
         if res_v != value {
-            Err(From::from("values is not set!"))
+            Err(From::from(format!("Устанавливаемое значение: {}, получено в ответ: {}.", value, res_v)))
         } else {
             Ok(res_v)
         }

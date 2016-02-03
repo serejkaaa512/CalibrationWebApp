@@ -106,12 +106,12 @@ fn main() {
 server.listen("0.0.0.0:6767");
 }
 
-fn get_powermeter(id: &str, pool: &Arc<MyPool>) -> PowerMeter {
+fn get_powermeter(id: &str, pool: &Arc<MyPool>) -> Option<PowerMeter> {
     let pm_props = get_device_from_db(&pool, "powermeters", id);
     PowerMeter::new(&*(pm_props.ip), pm_props.port)
 }
 
-fn get_generator(id: &str, pool: &Arc<MyPool>) -> Generator {
+fn get_generator(id: &str, pool: &Arc<MyPool>) -> Option<Generator> {
     let gen_props = get_device_from_db(&pool, "generators", id);
     Generator::new(&*(gen_props.ip), gen_props.port)
 }
@@ -120,7 +120,13 @@ fn get_powermeter_power<'a>(req: &mut Request, mut resp: Response<'a>) -> Middle
     let id = req.param("id").unwrap();
     let channel = req.param("channel").unwrap().parse::<u8>().unwrap();
     let pool = req.db_connection();
-    let mut powermeter = get_powermeter(id, &pool);
+    let mut powermeter =  match get_powermeter(id, &pool) {
+        Some(pm) => pm,
+        None => {
+            resp.set(StatusCode::BadRequest);
+            return resp.send("Невозможно соединиться с измерителем мощности.")
+        },
+    };
     let power = powermeter.get_power(channel);
     match power {
         Ok(p) => resp.send(p.to_string()),
@@ -135,7 +141,14 @@ fn set_generator_freq<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlewa
     let id = req.param("id").unwrap();
     let freq = req.param("freq").unwrap().parse::<f32>().unwrap();
     let pool = req.db_connection();
-    let mut generator = get_generator(id, &pool);
+    let mut generator =  match get_generator(id, &pool) {
+        Some(gen) => gen,
+        None => {
+            resp.set(StatusCode::BadRequest);
+            return resp.send("Невозможно соединиться с генератором.")
+        },
+    };
+
     match generator.set_freq(freq) {
        Ok(_) => resp.send("freq is setted!"),
        Err(e) => {
@@ -147,7 +160,13 @@ fn set_generator_freq<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlewa
 fn turn_generator_off<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
     let id = req.param("id").unwrap();
     let pool = req.db_connection();
-    let mut generator = get_generator(id, &pool);
+    let mut generator =  match get_generator(id, &pool) {
+        Some(gen) => gen,
+        None => {
+            resp.set(StatusCode::BadRequest);
+            return resp.send("Невозможно соединиться с генератором.")
+        },
+    };
     match generator.set_power_off() {
         Some(e) => {
             resp.set(StatusCode::BadRequest);
@@ -161,7 +180,13 @@ fn turn_generator_off<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlewa
 fn turn_generator_on<'a>(req: &mut Request, mut resp: Response<'a>) -> MiddlewareResult<'a> {
     let id = req.param("id").unwrap();
     let pool = req.db_connection();
-    let mut generator = get_generator(id, &pool);
+    let mut generator =  match get_generator(id, &pool) {
+        Some(gen) => gen,
+        None => {
+            resp.set(StatusCode::BadRequest);
+            return resp.send("Невозможно соединиться с генератором.")
+        },
+    };
     match generator.set_power_on() {
         Some(e) => {
             resp.set(StatusCode::BadRequest);
@@ -175,7 +200,13 @@ fn set_generator_power<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlew
     let id = req.param("id").unwrap();
     let p = req.param("p").unwrap().parse::<f32>().unwrap();
     let pool = req.db_connection();
-    let mut generator = get_generator(id, &pool);
+    let mut generator =  match get_generator(id, &pool) {
+        Some(gen) => gen,
+        None => {
+            resp.set(StatusCode::BadRequest);
+            return resp.send("Невозможно соединиться с генератором.")
+        },
+    };
     match generator.set_power(p) {
        Ok(_) => resp.send("power is setted!"),
        Err(e) => {
@@ -194,13 +225,15 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     let fmax = query.get("fmax").unwrap();
     let fstep = query.get("fstep").unwrap();
     let pgen = query.get("pgen").unwrap();
+    let pchannel = query.get("pchannel").unwrap();
 
     let name = query.get("name").unwrap();
-    let time = time::strftime("%y_%m_%d__%H_%M_%S", &time::now()).unwrap();
+    let time = time::strftime("%d/%m/%y %H:%M:%S", &time::now()).unwrap();
     let table_name = &*(name.to_string() + "_" + &*time);
 
     let insert_str = 
-    r"INSERT INTO reports(id_gen, id_pm, Name, Fmin, Fmax, Fstep, Pgen) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    r"INSERT INTO reports(id_gen, id_pm, Name, Fmin, Fmax, Fstep, Pgen, Pchannel) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     let mut stmt = pool.prepare(insert_str).unwrap();
     let _ = stmt.execute((gen_id, pm_id, table_name, fmin, fmax, fstep, pgen));
 
@@ -217,6 +250,7 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     data.insert("fstep", fstep);
     data.insert("pgen", pgen);
     data.insert("table_name", table_name);
+    data.insert("pchannel", pchannel);
     return resp.render("src/templates/algorithm.tpl", &data);
 }
 

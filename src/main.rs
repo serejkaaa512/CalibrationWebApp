@@ -14,7 +14,8 @@ use mysql::conn::pool::MyPool;
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
-use nickel::{Nickel, HttpRouter, Request, Response, StaticFilesHandler, MiddlewareResult, QueryString};
+use nickel::{Nickel, HttpRouter, Request, Response, 
+    StaticFilesHandler, MiddlewareResult, QueryString, JsonBody};
 use nickel::status::StatusCode;
 use url::form_urlencoded;
 use groupable::Groupable;
@@ -29,11 +30,16 @@ struct Props {
 }
 
 #[derive(RustcDecodable, RustcEncodable)]
-struct Options {
-    generator: Props,
-    powermeter: Props,
+struct Report {
+    rep_name: String,
+    values: Vec<FreqPower>
 }
 
+#[derive(RustcDecodable, RustcEncodable)]
+struct FreqPower {
+    freq: f32,
+    pow: f32
+}
 
 fn logger<'a, D>(request: &mut Request<D>, response: Response<'a, D>) -> MiddlewareResult<'a, D> {
     println!("logging request: {:?}", request.origin.uri);
@@ -103,10 +109,26 @@ fn main() {
             return get_powermeter_power(req, resp)
         }
 
-        ));
+        post "/report/add" => |req, resp| {
+            return add_report(req, resp)
+        }
 
-server.listen("0.0.0.0:6767");
+    ));
+
+    server.listen("0.0.0.0:6767");
 }
+
+fn add_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
+    let pool = req.db_connection();
+    let report = req.json_as::<Report>().unwrap();
+    for v in report.values {
+        let insert_str = format!("INSERT INTO `{}`(F, P) VALUES (?, ?)", report.rep_name);
+        let mut stmt = pool.prepare(insert_str).unwrap();
+        let _ = stmt.execute((v.freq, v.pow));
+    }
+    resp.send("сохранено в бд!")
+}
+
 
 fn get_powermeter(id: &str, pool: &Arc<MyPool>) -> Option<PowerMeter> {
     let pm_props = get_device_from_db(&pool, "powermeters", id);
@@ -151,8 +173,8 @@ fn set_generator_freq<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlewa
         },
     };
     match generator.set_freq(freq) {
-       Ok(_) => resp.send("freq is setted!"),
-       Err(e) => {
+     Ok(_) => resp.send("freq is setted!"),
+     Err(e) => {
         resp.set(StatusCode::BadRequest);
         resp.send(e.to_string())
     }}
@@ -209,8 +231,8 @@ fn set_generator_power<'a>(req: &mut Request, mut resp: Response<'a>) -> Middlew
         },
     };
     match generator.set_power(p) {
-       Ok(_) => resp.send("power is setted!"),
-       Err(e) => {
+     Ok(_) => resp.send("power is setted!"),
+     Err(e) => {
         resp.set(StatusCode::BadRequest);
         resp.send(e.to_string())
     }}
@@ -252,7 +274,7 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     data.insert("pgen", pgen);
     data.insert("table_name", table_name);
     data.insert("pchannel", pchannel);
-    return resp.render("src/templates/algorithm.tpl", &data);
+    return resp.render("templates/algorithm.tpl", &data);
 }
 
 fn get_report_options<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
@@ -265,7 +287,7 @@ fn get_report_options<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareRe
     let mut data: HashMap<&str, Props> = HashMap::new();
     data.insert("generator", generator);
     data.insert("powermeter", powermeter);
-    return resp.render("src/templates/options.tpl", &data)
+    return resp.render("templates/options.tpl", &data)
 }
 
 fn get_device_from_db(pool: &Arc<MyPool>, dev_name: &str, id: &str) -> Props {
@@ -283,11 +305,10 @@ fn get_hashmap_from_query(encoded_string : &str) -> HashMap<String, Vec<String>>
     .group()
 }
 
-fn get_param_from_hashmap(map: &HashMap<String, Vec<String>>, param_name: &str) -> String{
+fn get_param_from_hashmap<'a>(map: &'a HashMap<String, Vec<String>>, param_name: &str) -> &'a str{
     map.get(param_name)
     .and_then(|v| v.first().map(|s| &**s))
     .unwrap()
-    .to_string()
 }
 
 fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
@@ -297,7 +318,7 @@ fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResul
     let mut data: HashMap<&str, Vec<Props>> = HashMap::new();
     data.insert("generators", generators);
     data.insert("powermeters", powermeters);
-    return resp.render("src/templates/mainpage.tpl", &data);
+    return resp.render("templates/mainpage.tpl", &data);
 }
 
 fn get_devices_from_db(pool: &Arc<MyPool>, dev_name: &str) -> Vec<Props> {
@@ -319,7 +340,7 @@ fn add_device_to_db<'a>(req: &mut Request, resp: Response<'a>, dev_name: &str) -
     let mut form_data = String::new();
     req.origin.read_to_string(&mut form_data).unwrap();
     let map = &get_hashmap_from_query(&*form_data);
-    let ip = &*get_param_from_hashmap(map, "ip");
+    let ip = get_param_from_hashmap(map, "ip");
     let port = get_param_from_hashmap(map, "port").parse::<u16>().unwrap();
     let pool = req.db_connection();
     let insert_str = 
@@ -336,5 +357,5 @@ fn add_device_to_db<'a>(req: &mut Request, resp: Response<'a>, dev_name: &str) -
         Props {ip: ip, port: port, busy: busy, id: id}}).collect()})
     .unwrap();
 
-    return resp.render(format!("src/templates/{}.tpl", dev_name), &res[0]);
+    return resp.render(format!("templates/{}.tpl", dev_name), &res[0]);
 }

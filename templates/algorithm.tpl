@@ -29,12 +29,15 @@
     </h3>
 </div>
 <table class="table table-striped" id="res_table">
-    <tr><td>Частота, МГц</td><td>Мощность, дБм</td></tr>
-</table>
+    <thead>
+        <tr><td>Частота, МГц</td><td>Мощность, дБм</td></tr>
+    </thead>
+    <tbody>
 
+    </tbody>
+</table>
 <h3>
     <div class="alert alert-danger" id="id_error">
-        
     </div>
 </h3>
 <script>
@@ -46,24 +49,129 @@
     var gen_id = {{gen_id}};
     var pm_id = {{pm_id}};
     var fcur = fmin;
-    $('#id_error').hide();
+    var trs = null;
 
     $(document).ready(function() {
+        $('#id_error').hide();
+        while (fcur <= fmax) {
+            $('#res_table').append('<tr><td>'+fcur+'</td><td class="respP">?</td></tr>');
+            fcur += fstep;
+            fcur = Number(fcur.toFixed(3));
+        };
+        Start();
+    });
+
+
+    function Start() {
+        table = $('#res_table').children()[1];
+        trs = $(table).children();
+
         if (!Generator_set_power(gen_id, pgen))
             return;
         if (!Generator_turn_on(gen_id))
             return;
-        while (fcur <= fmax) {
-            if (!Generator_set_freq(gen_id, fcur))
-                return;
-            if (!PowerMeter_get_power(pm_id))
-                return;
-            fcur += fstep;
-            fcur = Number(fcur.toFixed(3));
-        }
-        Generator_turn_off(gen_id);
-    });
 
+        var set_freq = function(i) {
+            i = i | 0;
+            if (i < trs.length)
+            {
+                if (Generator_set_freq(i)) {
+                    setTimeout(get_power.bind(null, i), 300);
+                    return;
+                }
+                return;
+            }
+
+            Generator_turn_off(gen_id);
+            Save_report();
+        }
+
+        var get_power = function(i) {
+            if (PowerMeter_get_power(i)) {
+                i++;
+                setTimeout(set_freq.bind(null, i), 300);
+            }
+        }
+
+        setTimeout(set_freq.bind(null), 300);
+
+    }
+
+    function Save_report () {
+        values = []
+        for (var i = 0; i < trs.length; i++) {
+            var freq = $($(trs[i]).children()[0]).html();
+            var pow = $($(trs[i]).children()[1]).html();
+            item = {}
+            item ["freq"] = freq;
+            item ["pow"] = pow;
+            values.push(item);
+        };
+
+        data = {};
+        var rep_name = "{{table_name}}";
+        data['rep_name'] = rep_name;
+        data['values'] = values;
+
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/report/add',
+            'dataType' : 'json',
+            'data' : JSON.stringify(data),
+            'contentType': "application/json; charset=utf-8",
+            'cache':false,
+            'async': false,
+            'success':function(response){
+                flag = true;
+            },
+            'error':function(response, status, xhr){
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
+            }
+        });
+
+    }
+
+
+    function Generator_set_freq (i) {
+        var flag = false;
+        jQuery.ajax({
+            'type':'POST',
+            'url':'/generator/'+gen_id+'/set_freq/'+ $($(trs[i]).children()[0]).html(),
+            'cache':false,
+            'async': false,
+            'success':function(response){
+                flag = true;
+            },
+            'error':function(response, status, xhr){
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
+            }
+        });
+
+        return flag;
+    }
+
+    function PowerMeter_get_power (i) {
+        console.log(trs[i]);
+        var flag = false;
+        jQuery.ajax({
+            'type':'GET',
+            'url':'/powermeter/'+pm_id+'/'+pchannel+'/power',
+            'cache':false,
+            'async': false,
+            'success':function(response){
+                $($(trs[i]).children()[1]).html(response);
+                flag = true;
+            },
+            'error':function(response, status, xhr){
+                $('#id_error').show();
+                $('#id_error').html(response.responseText);
+            }
+        });
+
+        return flag;
+    }
 
     function Generator_set_power (gen_id, pgen) {
         var flag = false;
@@ -103,41 +211,6 @@
         return flag;
     }
 
-    function Generator_set_freq (gen_id, freq) {
-        var flag = false;
-        jQuery.ajax({
-            'type':'POST',
-            'url':'/generator/'+gen_id+'/set_freq/'+ freq,
-            'cache':false,
-            'async': false,
-            'success':function(response){
-                flag = true;
-            },
-            'error':function(response, status, xhr){
-                $('#id_error').show();
-                $('#id_error').html(response.responseText);
-            }
-        });
-        return flag;
-    }
-    function PowerMeter_get_power (pm_id) {
-        var flag = false;
-        jQuery.ajax({
-            'type':'GET',
-            'url':'/powermeter/'+pm_id+'/'+pchannel+'/power',
-            'cache':false,
-            'async': false,
-            'success':function(response){
-                $('#res_table').append("<tr><td>"+fcur+"</td><td>"+response+"</td></tr>")
-                flag = true;
-            },
-            'error':function(response, status, xhr){
-                $('#id_error').show();
-                $('#id_error').html(response.responseText);
-            }
-        });
-        return flag;
-    }
 
     function Generator_turn_off (gen_id) {
         var flag = false;

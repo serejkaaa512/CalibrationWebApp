@@ -35,7 +35,6 @@ impl Generator {
 
     pub fn set_freq(&mut self, mut freq: f32) -> Result<f32, Box<Error>> {
         freq = (freq * 1000000f32).round();
-        println!("{:?}", freq);
         let set_freq_str = &*format!("SOUR:FREQ:FIX {}\n", freq.to_string());
         let get_freq_str = &*format!("SOUR:FREQ:FIX?\n");
         self.unit.set_query(freq, set_freq_str, get_freq_str)

@@ -15,7 +15,7 @@
 </div>
 {{/powermeter}}
 <div>
-    <form method="get" action="/calibration/algorithm/">
+    <form method="get" action="/calibration/algorithm">
         <div class="text-center">
             <table class="table">
                 <tr class="row">

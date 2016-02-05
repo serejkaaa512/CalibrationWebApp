@@ -26,7 +26,7 @@ struct Props {
     ip: String,
     port: u16,
     busy: bool,
-    id: i32
+    id: u64
 }
 
 #[derive(RustcDecodable, RustcEncodable)]
@@ -69,10 +69,14 @@ fn main() {
             return get_report_options(req, resp)
         }
 
-        get "/calibration/algorithm/" => |req, resp| {
+        get "/calibration/algorithm" => |req, resp| {
             return calibration_algorithm(req, resp)
         }
         
+        get "/calibration/reports" => |req, resp| {
+            return get_reports(req, resp)
+        }
+
         post "/generator/add" => |req, resp| {
             return add_device_to_db(req, resp, "generator")
         }
@@ -117,6 +121,22 @@ fn main() {
 
     server.listen("0.0.0.0:6767");
 }
+
+fn get_reports<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
+    let pool = req.db_connection();
+    let select_str = 
+    format!("SELECT Name FROM reports LIMIT 10");
+    let res: Vec<Report> = pool.prep_exec(select_str,())
+    .map(|result| { result.map(|x| x.unwrap()).map(|row| {
+        let name: String = from_row(row);
+        Report{rep_name: name, values: (Vec::new())}
+        }).collect()})
+    .unwrap();
+    let mut data: HashMap<&str, Vec<Report>> = HashMap::new();
+    data.insert("reps", res);
+    return resp.render("templates/reports.tpl", &data);   
+}
+
 
 fn add_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
     let pool = req.db_connection();
@@ -250,16 +270,17 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     let pgen = query.get("pgen").unwrap();
     let pchannel = query.get("pchannel").unwrap();
 
-    let name = query.get("name").unwrap();
     let time = time::strftime("%d/%m/%y %H:%M:%S", &time::now()).unwrap();
-    let table_name = &*(name.to_string() + " " + &*time);
+    let name = &*(query.get("name").unwrap().to_string() + " " + &*time);
 
     let insert_str = 
     r"INSERT INTO reports(id_gen, id_pm, Name, Fmin, Fmax, Fstep, Pgen, Pchannel) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     let mut stmt = pool.prepare(insert_str).unwrap();
-    let _ = stmt.execute((gen_id, pm_id, table_name, fmin, fmax, fstep, pgen, pchannel));
+    let query_res = stmt.execute((gen_id, pm_id, name, fmin, fmax, fstep, pgen, pchannel));
+    let id = query_res.unwrap().last_insert_id();
 
+    let table_name = &*format!("report_{:?}", id);
     let create_str = format!(
         "CREATE TABLE `{}` ( `F` FLOAT, `P` FLOAT)ENGINE=MyISAM", table_name);
     let _ = pool.prep_exec(create_str, ());
@@ -346,16 +367,7 @@ fn add_device_to_db<'a>(req: &mut Request, resp: Response<'a>, dev_name: &str) -
     let insert_str = 
     format!(r"INSERT INTO {}s(IP, Port, IsBusy) VALUES (?, ?, ?)", dev_name);
     let mut stmt = pool.prepare(insert_str).unwrap();
-    let _ = stmt.execute((ip,port,false));
-
-    let select_str = 
-    format!("SELECT IP, Port, IsBusy, Id FROM {}s WHERE IP=? AND Port=? AND IsBusy=false",
-        dev_name);
-    let res: Vec<Props> = pool.prep_exec(select_str, (ip, port))
-    .map(|result| { result.map(|x| x.unwrap()).map(|row| {
-        let (ip, port, busy, id) = from_row(row);
-        Props {ip: ip, port: port, busy: busy, id: id}}).collect()})
-    .unwrap();
-
-    return resp.render(format!("templates/{}.tpl", dev_name), &res[0]);
+    let query = stmt.execute((ip,port,false));
+    let id = query.unwrap().last_insert_id();
+    return resp.render(format!("templates/{}.tpl", dev_name), &Props{ip:ip.to_string(), port:port, busy: false, id:id});
 }

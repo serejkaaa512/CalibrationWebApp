@@ -89,13 +89,21 @@
     </form>
 </div>
 <br/>
-<br/>
-<br/>
-<div class="text-center">
+<div align="center">
     <form method="get" name="connection_form" action="/calibration/options">
-        <input class="btn btn-lg btn-success" type="button" id="id_connection_btn" value="К настройкам алгоритма">
+        <div align="center">
+            <input class="btn btn-lg btn-success" type="button" id="id_connection_btn" value="К настройкам алгоритма">
+        </div>
         <input type="hidden" value="" name="generator_id" id="generator_id">
         <input type="hidden" value="" name="powermeter_id" id="powermeter_id">
+    </form>
+</div>
+<br/>
+<br/>
+<br/>
+<div align="center">
+    <form method="get" action="/calibration/reports">
+        <input class="btn btn-lg btn-success" type="submit" id="id_reports" value="Отчеты">
     </form>
 </div>
 <script>

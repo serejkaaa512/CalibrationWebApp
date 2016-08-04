@@ -24,7 +24,7 @@
     </form>
 </div>
 <div align="center">
-    <form method="get" name="rep_list_form" action="/calibration/reports/get">
+    <form method="get" name="rep_list_form" action="/calibration/report">
         <div align="center">
             <input class="btn btn-lg btn-success" type="button" id="id_rep_btn" value="Открыть">
         </div>

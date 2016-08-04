@@ -1,6 +1,6 @@
 [package]
 name = "calibration_web_app"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["serejkaaa512"]
 
 [dependencies]
@@ -12,6 +12,7 @@ plugin="*"
 rustc-serialize = "*"
 time="*"
 regex="*"
+simple_graph = { git = "https://github.com/serejkaaa512/Simple_Graph.git" }
 
 [dependencies.mysql]
 mysql = "*"

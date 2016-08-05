@@ -19,7 +19,6 @@ use nickel::{Nickel, Request, Response, StaticFilesHandler, MiddlewareResult, Qu
              JsonBody};
 use nickel::status::StatusCode;
 use url::form_urlencoded;
-use url::form_urlencoded::Parse;
 use mysql::value::from_row;
 use simple_graph::graph;
 use simple_graph::graph::Point;
@@ -149,10 +148,7 @@ fn get_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a>
     let id: Vec<i32> = pool.prep_exec(select_table_id, ())
         .map(|result| {
             result.map(|x| x.unwrap())
-                .map(|row| {
-                    let id = from_row(row);
-                    id
-                })
+                .map(from_row)
                 .collect()
         })
         .unwrap();
@@ -174,14 +170,14 @@ fn get_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a>
     let mut data: HashMap<&str, Vec<FreqPower>> = HashMap::new();
     let _ = graph::create(res.iter(), "assets/graph.bmp", 740, 480);
     data.insert("results", res);
-    return resp.render("templates/report.tpl", &data);
+    resp.render("templates/report.tpl", &data)
 }
 
 
 
 fn get_reports<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
     let pool = req.db_connection();
-    let select_str = format!("SELECT Name FROM reports LIMIT 10");
+    let select_str = "SELECT Name FROM reports LIMIT 10";
     let res: Vec<Report> = pool.prep_exec(select_str, ())
         .map(|result| {
             result.map(|x| x.unwrap())
@@ -197,7 +193,7 @@ fn get_reports<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a
         .unwrap();
     let mut data: HashMap<&str, Vec<Report>> = HashMap::new();
     data.insert("reps", res);
-    return resp.render("templates/reports.tpl", &data);
+    resp.render("templates/reports.tpl", &data)
 }
 
 
@@ -214,12 +210,12 @@ fn add_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a>
 
 
 fn get_powermeter(id: &str, pool: &Arc<Pool>) -> Option<PowerMeter> {
-    let pm_props = get_device_from_db(&pool, "powermeters", id);
+    let pm_props = get_device_from_db(pool, "powermeters", id);
     PowerMeter::new(&*(pm_props.ip), pm_props.port)
 }
 
 fn get_generator(id: &str, pool: &Arc<Pool>) -> Option<Generator> {
-    let gen_props = get_device_from_db(&pool, "generators", id);
+    let gen_props = get_device_from_db(pool, "generators", id);
     Generator::new(&*(gen_props.ip), gen_props.port)
 }
 
@@ -359,7 +355,7 @@ fn calibration_algorithm<'a>(req: &mut Request, resp: Response<'a>) -> Middlewar
     data.insert("pgen", pgen);
     data.insert("table_name", table_name);
     data.insert("pchannel", pchannel);
-    return resp.render("templates/algorithm.tpl", &data);
+    resp.render("templates/algorithm.tpl", &data)
 }
 
 fn get_report_options<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
@@ -372,7 +368,7 @@ fn get_report_options<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareRe
     let mut data: HashMap<&str, Props> = HashMap::new();
     data.insert("generator", generator);
     data.insert("powermeter", powermeter);
-    return resp.render("templates/options.tpl", &data);
+    resp.render("templates/options.tpl", &data)
 }
 
 fn get_device_from_db(pool: &Arc<Pool>, dev_name: &str, id: &str) -> Props {
@@ -396,21 +392,6 @@ fn get_device_from_db(pool: &Arc<Pool>, dev_name: &str, id: &str) -> Props {
     res[0].clone()
 }
 
-// fn get_hashmap_from_query(encoded_string: &str) -> HashMap<String, Vec<String>> {
-//     form_urlencoded::parse(encoded_string.as_bytes()).into_iter()
-// }
-
-// fn get_param_from_hashmap<'a>(map: &'a HashMap<String, Vec<String>>, param_name: &str) -> &'a str {
-//     map.get(param_name)
-//         .and_then(|v| v.first().map(|s| &**s))
-//         .unwrap()
-// }
-
-
-fn get_param<'a>(parse: &'a Parse, param_name: &str) -> String {
-    let value = parse.clone().find(|p| p.0 == param_name).unwrap();
-    value.1.into_owned()
-}
 
 fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
     let pool = req.db_connection();
@@ -419,7 +400,7 @@ fn get_all_devices<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResul
     let mut data: HashMap<&str, Vec<Props>> = HashMap::new();
     data.insert("generators", generators);
     data.insert("powermeters", powermeters);
-    return resp.render("templates/mainpage.tpl", &data);
+    resp.render("templates/mainpage.tpl", &data)
 }
 
 fn get_devices_from_db(pool: &Arc<Pool>, dev_name: &str) -> Vec<Props> {
@@ -457,20 +438,23 @@ fn add_device_to_db<'a>(req: &mut Request,
                         -> MiddlewareResult<'a> {
     let mut form_data = String::new();
     req.origin.read_to_string(&mut form_data).unwrap();
-    let map = &form_urlencoded::parse(form_data.as_bytes());
-    let ip = &*get_param(map, "ip");
-    let port = get_param(map, "port").parse::<u16>().unwrap();
+    let mut data = HashMap::new();
+    for (key, value) in form_urlencoded::parse(form_data.as_bytes()) {
+        data.insert(key, value);
+    }
+    let ip = &*data.get("ip").unwrap().parse::<String>().unwrap();
+    let port = data.get("port").unwrap().parse::<u16>().unwrap();
     let pool = req.db_connection();
     let insert_str = format!(r"INSERT INTO {}s(IP, Port, IsBusy) VALUES (?, ?, ?)",
                              dev_name);
     let mut stmt = pool.prepare(insert_str).unwrap();
     let query = stmt.execute((ip, port, false));
     let id = query.unwrap().last_insert_id();
-    return resp.render(format!("templates/{}.tpl", dev_name),
-                       &Props {
-                           ip: ip.to_string(),
-                           port: port,
-                           busy: false,
-                           id: id,
-                       });
+    resp.render(format!("templates/{}.tpl", dev_name),
+                &Props {
+                    ip: ip.to_string(),
+                    port: port,
+                    busy: false,
+                    id: id,
+                })
 }

@@ -10,9 +10,9 @@
         <h2>
             <div class="gen_item">
                 <label class="btn btn-default">
-                <input type="radio" value="{{rep_name}}" name="rep_name" >
+                <input type="radio" value="{{name}}" name="rep_name" >
                 </label>
-                <label class="label label-info">{{rep_name}}</label>
+                <label class="label label-info">{{name}}</label>
                 <br/>
             </div>
         </h2>

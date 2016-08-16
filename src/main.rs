@@ -33,18 +33,19 @@ struct Props {
 
 #[derive(RustcDecodable, RustcEncodable)]
 struct Report {
-    rep_name: String,
+    id: i32,
+    name: String,
     values: Vec<FreqPower>,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Clone, PartialEq)]
 struct FreqPower {
     freq: f32,
     pow: f32,
 }
 
-impl<'a> From<&'a FreqPower> for Point {
-    fn from(t: &'a FreqPower) -> Point {
+impl<'a> From<FreqPower> for Point {
+    fn from(t: FreqPower) -> Point {
         Point {
             x: t.freq as f64,
             y: t.pow as f64,
@@ -135,10 +136,42 @@ fn main() {
             return get_report(req, resp)
         }
 
+        get "/calibration/graph/:id" => |req, resp| {
+            return get_graph(req, resp)
+        }
+
     ));
 
     server.listen("0.0.0.0:6767");
 }
+
+
+fn get_graph<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
+    let pool = req.db_connection();
+    let id = req.param("id").unwrap();
+    
+    let select_str = format!("SELECT * FROM report_{}", id);
+    let res: Vec<FreqPower> = pool.prep_exec(select_str, ())
+        .map(|result| {
+            result.map(|x| x.unwrap())
+                .map(|row| {
+                    let values: (f32, f32) = from_row(row);
+                    FreqPower {
+                        freq: values.0,
+                        pow: values.1,
+                    }
+                })
+                .collect()
+        })
+        .unwrap();
+
+    let graph = graph::create(res.into_iter(), 740, 480);
+    match graph {
+        Ok(bytes) => resp.send(bytes),
+        Err(err) => resp.send(err.to_string()),
+    }
+}
+
 
 fn get_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> {
     let pool = req.db_connection();
@@ -167,9 +200,14 @@ fn get_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a>
                 .collect()
         })
         .unwrap();
-    let mut data: HashMap<&str, Vec<FreqPower>> = HashMap::new();
-    let _ = graph::create(res.iter(), "assets/graph.bmp", 740, 480);
-    data.insert("results", res);
+    let mut data = HashMap::new();
+    let report = Report {
+        id: id[0].clone(),
+        name: table_name.to_string(),
+        values: res,
+    };
+    data.insert("report", report);
+
     resp.render("templates/report.tpl", &data)
 }
 
@@ -184,7 +222,8 @@ fn get_reports<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a
                 .map(|row| {
                     let name: String = from_row(row);
                     Report {
-                        rep_name: name,
+                        id: 0,
+                        name: name,
                         values: (Vec::new()),
                     }
                 })
@@ -201,7 +240,7 @@ fn add_report<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a>
     let pool = req.db_connection();
     let report = req.json_as::<Report>().unwrap();
     for v in report.values {
-        let insert_str = format!("INSERT INTO `{}`(F, P) VALUES (?, ?)", report.rep_name);
+        let insert_str = format!("INSERT INTO `{}`(F, P) VALUES (?, ?)", report.name);
         let mut stmt = pool.prepare(insert_str).unwrap();
         let _ = stmt.execute((v.freq, v.pow));
     }

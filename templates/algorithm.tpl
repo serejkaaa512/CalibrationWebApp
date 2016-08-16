@@ -110,8 +110,9 @@
 
         data = {};
         var rep_name = "{{table_name}}";
-        data['rep_name'] = rep_name;
+        data['name'] = rep_name;
         data['values'] = values;
+        data['id'] = 0;
 
         jQuery.ajax({
             'type':'POST',

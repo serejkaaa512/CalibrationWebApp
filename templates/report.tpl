@@ -1,21 +1,23 @@
 {{> header }}
 <div class="text-center">
     <h1>
-        {{name}}
+        {{#report}}{{name}}{{/report}}
     </h1>
 </div>
 <table class="table table-striped" id="res_table">
     <thead>
         <tr><td>Частота, МГц</td><td>Мощность, дБм</td></tr>
-        {{#results}}
+        {{#report}}
+        {{#values}}
             <tr><td>{{ freq }}</td><td>{{ pow }}</td></tr>
-        {{/results}}
+        {{/values}}
+        {{/report}}
     </thead>
     <tbody>
 
     </tbody>
 </table>
 <h3>
-     <image src="/graph.bmp"/>
+     <image src="/calibration/graph/{{#report}}{{id}}{{/report}}"/>
 </h3>
 {{> footer }}

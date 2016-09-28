@@ -7,7 +7,7 @@ extern crate mysql;
 extern crate rustc_serialize;
 extern crate time;
 extern crate regex;
-extern crate simple_graph;
+extern crate simple_chart;
 
 use regex::Regex;
 use calibration_web_app::{Generator, PowerMeter, MysqlMiddleware, MysqlRequestExtensions};
@@ -20,9 +20,7 @@ use nickel::{Nickel, Request, Response, StaticFilesHandler, MiddlewareResult, Qu
 use nickel::status::StatusCode;
 use url::form_urlencoded;
 use mysql::value::from_row;
-use simple_graph::graph;
-use simple_graph::graph::Point;
-
+use simple_chart::{Chart, Serie, Point};
 #[derive(RustcDecodable, RustcEncodable, Clone)]
 struct Props {
     ip: String,
@@ -142,7 +140,7 @@ fn main() {
 
     ));
 
-    server.listen("0.0.0.0:6767");
+    server.listen("0.0.0.0:6767").unwrap();
 }
 
 
@@ -165,10 +163,15 @@ fn get_graph<'a>(req: &mut Request, resp: Response<'a>) -> MiddlewareResult<'a> 
         })
         .unwrap();
 
-    let graph = graph::create(res.into_iter(), 740, 480);
-    match graph {
-        Ok(bytes) => resp.send(bytes),
-        Err(err) => resp.send(err.to_string()),
+    let mut chart = Chart::new(740, 480, "#ffffff", "#000000")
+        .unwrap();
+    match Serie::new(res.into_iter(), "#ff0000") {
+        Ok(serie) => {
+            let series = vec![serie];
+            let bmp = chart.draw(series.into_iter());
+            resp.send(bmp)
+        },
+        Err(err) => resp.send(err.to_string())
     }
 }
 

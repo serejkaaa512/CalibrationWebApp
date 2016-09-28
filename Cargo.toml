@@ -12,7 +12,7 @@ plugin="*"
 rustc-serialize = "*"
 time="*"
 regex="*"
-simple_graph = { git = "https://github.com/serejkaaa512/Simple_Graph.git" }
+simple-chart = "*"
 
 [dependencies.mysql]
 mysql = "*"
